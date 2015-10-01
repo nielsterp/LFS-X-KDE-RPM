@@ -1,0 +1,172 @@
+		      LFS with RPM, version 7.7
+
+
+	This script is based on LFS stable release version 7.7, with the folowing additions:
+  
+	Some additional packages has been added from BLFS version 7.7. They are:
+	which, openssl, openssh, wget, ca-certificates, sudo, lsb-release, gpm, curl, 
+	libffi, python2, git, ccache, blfs-files, dhcp, wireless_tools, net-tools, pciutils, 
+	libnl, wpa_supplicant.
+	
+	The kernel has been updated to version 4.2.2
+	
+	The whole script collection is Open Source.
+
+	This build system requires the following:
+
+	Log in to your host as a non-root user.
+	
+	Fetch build system: git clone https://www.github.com/nielsterp/LFS-X-KDE-RPM
+	
+	Partition for LFS under build, mounted at /mnt/lfs
+	
+	This can be a partition mounted there but you will be responsible for that as this 
+	build system uses just a directory at ${LFS}
+	
+	This system was designed and debugged on a Toshiba laptop with a Intel i5 processor,
+	and OpenSuSE as the host OS.The script has been testet with both 32-bit and 64-bit OS.
+	Building on a 32-bit system is currently broken. You CAN however build the basic LFS
+	with RPM on a 32-bit system, but building X.org will fail.
+	
+	The script package comes with two kernel configuration files. They are named 
+	config-4.2-32 (for 32-bit builds) and config-4.2-64 (for 64-bit builds).
+	
+	The build system uses a symlink to one of the two config files. 
+	
+	When you have downloaded the script package, the symlink is pointing to the config-4.2-64 file. 
+	So if you are building for 64 bit, you don't have to do anyhing here. Only if you
+	are building for 32-bit, you have to change the symlink to point to config-4.2-32.
+	
+	You will need some understanding of shell scripting, as you will need to alter some of 
+	the parameters in these scripts.
+
+Notes:
+	This build system uses sudo su. If you don't want to input the password for each command,
+	set up your unpriviledged user as belonging to ADMINS, using the visudo command. Then
+	give the ADMINS group permission to do anything without a password.
+	
+	The build system installs to /mnt/lfs/usr/src/Octothorpe
+
+WARNING:
+	This build system can trash your host.  
+
+	Edit config.inc to suit your system.
+	
+
+	Build Procedure goes as follows:
+	
+command to run			These are just comments don't enter these
+------------------------------	----------------------------------------- 
+sudo su -c ./mk-clean-lfs	Clean host from last attempt.
+sudo su -c ./mk-setup-lfs	Setup and install build system.
+sudo su - lfs			Change to lfs user.
+cd /mnt/lfs/usr/src/Octothorpe	cd to /mnt/lfs/usr/src/Octothorpe.
+./mk-tools			Build toolchain.
+exit 				lfs usr.
+cd /mnt/lfs/usr/src/Octothorpe	cd to /mnt/lfs/usr/src/Octothorpe.
+sudo su -c ./mk-lfs		Build system.
+
+At this point, basic LFS is ready. Set up grub, either at your host if you
+want to continue with installing in CHROOT at your host, or at the LFS par-
+tition if you want to abandon your host and continue in the newly installed
+LFS. Reboot your machine and boot into LFS. Give root a password, and setup
+other non-privilegded users. Use visudo to add the user(s) you want to be
+able to execute sudo. If you prefer to continue in CHROOT, boot into your 
+host again and do so.
+
+sudo su -c ./goto_chroot	Setup CHROOTed environment. Use this ONLY if you want to continue
+				on your host. Do NOT execute this line if you are building on the
+				now finished LFS system !
+cd /usr/src/Octothorpe
+				
+sudo su -c ./mk-lfs-x		Build X, XLibraries and Multimedia.
+
+sudo su -c ./mk-lfs-kde		Build KDE.
+
+				Execute next two lines ONLY if you are building in CHROOT !
+sudo su -c ./outof_chroot	Unmount kernel filesystem 			
+exit				Jump out of CHROOT
+
+Build at this point is complete.
+
+The following are some support scripts if you require them.
+
+sudo su -c ./mk-clean-lfs	Restores host system to pre build state
+				Removes the work you have just built
+				Use only when you have saved the binary
+				and source rpms and anything you may want
+				to save.
+				If you are going to build BLFS-RPM you
+				will need to retain the LFS-RPM work as
+				it is required for that build
+				
+sudo su -c./mk-install-lfs	Support script that can install the previous
+				build rpms onto a partition mounted at /mnt
+				You did save the binary and source rpms
+				didn't you?
+				Read the script before using it
+				
+				
+install grub 			if needed
+
+create grub/grub.cfg in /boot	add the LFS menu entry
+Installing grub:
+
+Notes:
+	If you need this, it should be done right after building LFS (before continuing with X).
+	
+	This is one way to install grub,
+	You will need to edit the set root=(hdx,x) and
+	root=/dev/sdxx lines to suit.
+	If you don't have a boot partition you will need to
+	change: linux /vmlinuz-<VERSION> root=/dev/sdxx ro
+	to:	linux /boot/vmlinux-<VERSION> root=/dev/sdxx> ro
+
+	grub-install --force --boot-directory=/mnt/lfs/boot /dev/sda
+
+	cat > /boot/grub/grub.cfg << "EOF"
+	# Begin /boot/grub/grub.cfg
+	set default=0
+	set timeout=5
+
+	menuentry "GNU/Linux Linux from scratch" {
+		insmod ext2
+		set root=(hdx,x)
+		linux /vmlinuz-<VERSION> root=</dev/sdxx ro
+	 }
+	# 	Uncomment this if you have Win what-ever installed
+	#	change set root=(hdx,x) to where you have win installed
+	#	set root=(hd0,1) usually
+ 	#menuentry "Windows" {
+	#	insmod ntfs
+	#	set root=(hdx,x)
+	#	chainloader +1
+	# }
+	# End /boot/grub/grub.cfg
+	 EOF
+
+This completes the build.
+
+Outstanding issues:
+
+You might notice that the package DBUS is build two times. This is (for unclear reasons)
+needed for KDM to work.
+
+You might find that after building KDE, the commands su and sudo does not work.You should then 
+set the suid bit on those two files. As root:
+
+chmod +s /bin/su
+chmod +s /bin/sudo
+
+Also in KDE the Network Manager applet does not work. Fix it by doing (as root):
+
+/usr/bin/glib-compile-schemas /usr/share/glib-2.0/schemas >/dev/null 2>&1
+
+Addition:
+
+There is a spec file for building Firefox (the source is downloaded together with
+all the other sources). After everything is finished, run ./mk-lfs-post-kde, and 
+firefox will be build.
+The current version only supports building in the finished system, not building in
+CHROOT. If you REALY wants to build in CHROOT at your host, read the instructions
+for Firefox in BLFS.

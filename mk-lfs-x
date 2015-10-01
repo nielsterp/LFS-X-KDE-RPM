@@ -1,0 +1,278 @@
+#!/bin/bash
+#################################################
+#	Title:	mk-lfs-x			#
+#        Date:	2015-06-01			#
+#     Version:	1.0				#
+#      Author:	nielsterp@comhem.se		#
+#     Options:	This script is designed to run	#
+#		in CHROOT on your host system.	#
+#		Do NOT attempt to run it from	#
+#		your LFS environment !		#
+#						#
+#		Run as root or use sudo.	#
+#################################################
+#
+#
+set -o errexit				# exit if error...insurance ;)
+set -o nounset				# exit if variable not initalized
+set +h					# disable hashall
+source config.inc
+source function.inc
+PRGNAME=${0##*/}			# script name minus the path
+[ ${EUID} -eq 0 ] 	|| die "${PRGNAME}: Need to be root user: FAILURE"
+[ -z ${PARENT} ]	&& die "${PRGNAME}: PARENT not set: FAILURE"
+[ -z ${LFS} ]		&& die "${PRGNAME}: LFS not set: FAILURE"
+	#
+	#	Build X-Org, X libraries, Multimedia libraries and KDE
+	#
+	[ -d "${LFS}" ] && die "${PRGNAME}: Not in chroot environment: FAILURE"
+	#
+	# Packages for X-org
+	
+	LIST+="util-macros bigreqsproto compositeproto damageproto dmxproto dri2proto dri3proto "
+	LIST+="fixesproto fontsproto glproto inputproto kbproto presentproto randrproto recordproto "
+	LIST+="renderproto resourceproto scrnsaverproto videoproto xcmiscproto xextproto xf86bigfontproto "
+	LIST+="xf86dgaproto xf86driproto xf86vidmodeproto xineramaproto xproto libxml2 libXau libXdmcp "
+	LIST+="xcb-proto libxslt libxcb libpng freetype fontconfig xtrans libX11 libXext libFS libICE "
+	LIST+="libSM libXScrnSaver libXt libXmu libXpm libXaw libXfixes libXcomposite libXrender libXcursor "
+	LIST+="libXdamage libfontenc libXfont libXft libXi libXinerama libXrandr libXres libXtst libXv "
+	LIST+="libXvMC libXxf86dga libXxf86vm libdmx libpciaccess libxkbfile libxshmfence xcb-util "
+	LIST+="xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-wm libdrm libvdpau llvm Mesa "
+	LIST+="xbitmaps bdftopcf iceauth luit mkfontdir mkfontscale sessreg setxkbmap smproxy "
+	LIST+="x11perf xauth xbacklight xcmsdb xcursorgen xdpyinfo xdriinfo xev xgamma xhost xinput "
+	LIST+="xkbcomp xkbevd xkbutils xkill xlsatoms xlsclients xmessage xmodmap xpr xprop xrandr "
+	LIST+="xrdb xrefresh xset xsetroot xvinfo xwd xwininfo xwud xcursor-themes font-util encodings "
+	LIST+="font-adobe-100dpi font-adobe-75dpi font-adobe-utopia-100dpi font-adobe-utopia-75dpi "
+	LIST+="font-adobe-utopia-type1 font-alias font-arabic-misc font-bh-100dpi font-bh-75dpi "
+	LIST+="font-bh-lucidatypewriter-100dpi font-bh-lucidatypewriter-75dpi font-bh-ttf font-bh-type1 "
+	LIST+="font-bitstream-100dpi font-bitstream-75dpi font-bitstream-type1 font-cronyx-cyrillic "
+	LIST+="font-cursor-misc font-daewoo-misc font-dec-misc font-ibm-type1 font-isas-misc font-jis-misc "
+	LIST+="font-micro-misc font-misc-cyrillic font-misc-ethiopic font-misc-meltho font-misc-misc "
+	LIST+="font-mutt-misc font-schumacher-misc font-screen-cyrillic font-sony-misc font-sun-misc "
+	LIST+="font-winitzki-cyrillic font-xfree86-type1 xkeyboard-config pixman xorg-server libevdev "
+	LIST+="xf86-input-evdev mtdev xf86-input-synaptics xf86-video-intel libva libva-intel-driver "
+	LIST+="twm xterm xclock xinit "
+
+	## Starting X-Libraries
+	# Deps for ATK:
+	LIST+="icu boost pcre glib shared-mime-info desktop-file-utils gobject-introspection unzip docbook-xml docbook-xsl "
+	LIST+="itstool libgpg-error libgcrypt gtk-doc "
+	# Ready for atk
+	LIST+="atk "
+	# Deps for Atkmm
+	LIST+="nettle libtasn1 gnutls libsigc++ glibmm "
+	# Ready for Atkmm
+	LIST+="atkmm "
+	# Deps for at-spi2-core are allready installed ...
+	LIST+="at-spi2-core "
+	# Deps for at-spi2-atk are allready installed ...
+	LIST+="at-spi2-atk "
+	# Deps for Cairo are allready installed ...
+	LIST+="cairo "
+	# Deps for Cairomm are allready installed ...
+	LIST+="cairomm "
+	# Deps for Cogl
+	LIST+="gsl gstreamer-1.4.5 alsa-lib iso-codes libogg libvorbis SDL libtheora gst-plugins-base-1.4.5 "
+	LIST+="harfbuzz freetype2 pango "
+	# Ready for Cogl
+	LIST+="cogl "
+	# Deps for Clutter
+	LIST+="json-glib nasm yasm libjpeg-turbo glu freeglut tiff lcms2 "
+	LIST+="libusb vala libgusb zip mozjs polkit eudev-gudev colord gdk-pixbuf gtk+-3.14.8 "
+	# Ready for Clutter
+	LIST+="clutter "
+	# Deps for Clutter-gst
+	LIST+="gst-plugins-bad-1.4.5 "
+	# Ready for Clutter-gst
+	LIST+="clutter-gst "
+	# Deps for Clutter-gtk are allready installed ...
+	LIST+="clutter-gtk "
+	# Deps for FLTK
+	LIST+="hicolor-icon-theme "
+	# Ready for FLTK
+	LIST+="fltk "
+	# Freeglut are allready installed ...
+	# Gdk-pixbuf are allready installed ...
+	# Glu are allready installed ...
+	# Deps for Goffice
+	LIST+="libgsf libcroco librsvg "
+	# Ready for Goffice
+	LIST+="goffice "
+	# Deps for GTK+ 2.24.26
+	LIST+="sgml-common xmlto OpenSP openjade "
+	# Ready for GTK+ 2.24.26
+	LIST+="gtk+-2.24.26 "
+	# GTK+ 3.14.8 are allready installed ...
+	# Deps for GTK Engines are allready installed ...
+	LIST+="gtk-engines "
+	# Deps for Gtkmm
+	LIST+="pangomm "
+	# Ready for Gtkmm 2.24.4
+	LIST+="gtkmm-2.24.4 "
+	# Deps for Gtkmm-3.14.0 are allready installed
+	LIST+="gtkmm-3.14.0 "
+	# Deps for Imlib2
+	LIST+="giflib "
+	# Ready for Imlib2
+	LIST+="imlib2 "
+	# Deps for Keybinder
+	LIST+="py2cairo pygobject pygtk "
+	# Ready for Keybinder
+	LIST+="keybinder "
+	# Libdrm are allready installed ...
+	# Deps for Libepoxy are allready installed ...
+	LIST+="libepoxy "
+	# Deps for Libglade are allready installed ...
+	LIST+="libglade "
+	# Deps for Libnotify
+	LIST+="json-c libsndfile speex-1.2rc2 speexdsp pulseaudio libcanberra notification-daemon "
+	# Ready for Libnotify
+	LIST+="libnotify "
+	# Deps for Libxklavier are allready installed ...
+	LIST+="libxklavier "
+	# Pango is allready installed ...
+	# Pangomm is allready installed ...
+	# Deps for QT4
+	LIST+="libmng gstreamer-0.10.36 gst-plugins-base-0.10.36 "
+	# Deps for Akonadi (QtSQL)
+	LIST+="libarchive cmake libevent mariadb "
+	# Ready for QT4
+	LIST+="qt-4.8.6 "
+	# Deps for QT 5 are allready installed
+	# LIST+="qt-5.4.0 "
+	# Deps for Startup-notification are allready installed ...
+	LIST+="startup-notification "
+	# Deps for WebKitGTK+-2.4.8
+	LIST+="p11-kit gcr gnome-keyring libsecret gsettings-desktop-schemas glib-networking "
+	LIST+="libsoup libwebp aspell dbus-glib enchant GConf libndp ConsoleKit upower "
+	LIST+="iptables slang newt polkit-gnome NetworkManager network-manager-applet geoclue ruby "
+	# Ready for WebKitGTK+-2.4.8
+	LIST+="webkitgtk-2.4.8 "
+	# Deps for WebKitGTK+-2.6.5 are allready installed ...
+	LIST+="webkitgtk-2.6.5 "
+	# Starting Multimedia
+	# Alsa-lib is allready installed
+	# Deps for Alsa-plugins
+	LIST+="fribidi libass fdk-aac lame x264-snapshot faac openjpeg xvidcore opus v4l-utils libvpx "
+	LIST+="ffmpeg libsamplerate "
+	# Ready for Alsa-plugins
+	LIST+="alsa-plugins "
+	# Deps for Alsa-utils are allready installed
+	LIST+="alsa-utils "
+	# Deps for Alsa-tools are allready installed
+	LIST+="alsa-tools "
+	# Alsa-firmware have AS31 as optional dep. Not installed.
+	LIST+="alsa-firmware "
+	# Deps for Alsa-oss are allready installed
+	LIST+="alsa-oss "
+	# Deps for AudioFile
+	LIST+="flac "
+	# Ready for AudioFile
+	LIST+="audiofile "
+	# FAAD has no deps
+	LIST+="faad2 "
+	# FLAC is allready installed
+	# Deps for Grilo are allready installed
+	LIST+="grilo "
+	# Deps for grilo-plugins 
+	LIST+="gmime totem-pl-parser "
+	# Ready for Grilo-plugins
+	LIST+="grilo-plugins "
+	LIST+="gst-plugins-good-0.10.31 gst-plugins-bad-0.10.23 "
+	# Deps for gst-plugins-ugly
+	LIST+="libdvdread libdvdnav "
+	# Ready for Gst-plugins-ugly
+	LIST+="gst-plugins-ugly-0.10.19 "
+	# Deps for gst-ffmpeg are allready installed
+	LIST+="gst-ffmpeg "
+	# Deps for Gst-plugins-good
+	LIST+="libdv taglib  "
+	# Ready for Gst-plugins-good
+	LIST+="gst-plugins-good-1.4.5 "
+	# Deps for Gst-plugins-ugly
+	LIST+="a52 libmad libmpeg2 "
+	# Ready for Gst-plugins-ugly
+	LIST+="gst-plugins-ugly-1.4.5 "
+	# Deps for Gst-libav are allready installed
+	LIST+="gst-libav "
+	# Deps for liba52 are allready installed
+	LIST+="a52 "
+	# Deps for Libao are allready installed
+	LIST+="libao "
+	# Libdiscid has no deps
+	LIST+="libdiscid "
+	# Libdvdcss has no deps
+	LIST+="libdvdcss "
+	# Deps for Libmusicbrainz are allready installed
+	LIST+="libmusicbrainz-2.1.5 "
+	# Deps for Musicbrainz-5.1.0
+	LIST+="neon "
+	# Ready for Musicbrainz-5.1.0
+	LIST+="libmusicbrainz-5.1.0 "
+	# Deps for Libquicktime are allready installed
+	LIST+="libquicktime "
+	# Libsamplerate is allready installed
+	# Libsndfile is allready installed
+	# Libtheora is allready installed
+	# Libvorbis is allready installed
+	# Libvpx is allready installed
+	# Deps for Opal
+	LIST+="ptlib "
+	# Ready for Opal
+	LIST+="opal "
+	# Opus is allready installed
+	# Pulseaudio is allready installed
+	# Deps for SBC are allready installed
+	LIST+="sbc "
+	# SDL is allready installed
+	LIST+="soundtouch "
+	# Speex is allready installed
+	# Taglib is allready installed
+	# V4L is allready installed
+	# x264-snapshot is allready installed
+	# Deps for Xine-lib are allready installed
+	LIST+="xine-lib "
+	# XviD is allready installed
+	# Chapter 39, Multimedia Libraries and Drivers finished
+	# Beginning Chapter 40, Audio Utilities
+	# Deps for mpg123 are allready installed
+	LIST+="mpg123 "
+	# Deps for vorbis-tools are allready installed
+	LIST+="vorbis-tools "
+	# LAME is allready installed
+	# CDParanoia-III has no deps
+	# LIST+="cdparanoia-III " Not installed, compile error
+	# FreeTTS is not installed
+	# Deps for Audacious are allready installed
+	LIST+="audacious audacious-plugins "
+	# Amarok not installed
+	# Deps for pnmixer are allready installed
+	LIST+="pnmixer "
+	# Chapter 40, Audio Utilities finished
+	# Chapter 41, Video Utilities starts
+	# FFmpeg is allready installed
+	# Deps for MPlayer are allready installed
+	LIST+="mplayer "
+	# Deps for Transcode are allready installed
+	LIST+="transcode "
+	# Deps for VLC are allready installed
+	LIST+="vlc "
+	# Deps for Xine-ui are allready installed
+	LIST+="xine-ui "
+	# Chapter 41 finished, now ready for desktop program (KDE, GNOME etc...)
+
+	for i in ${LIST}; do
+	  RPMPKG=""
+	  rm -rf BUILD/* BUILDROOT/* > /dev/null 2>&1
+	  RPMPKG=$(find RPMS -name "${i}-[0-9]*.rpm" -print)
+	  [ -z $RPMPKG ] || printf "%s\n" "       Skipping: ${i}"
+	  [ -z $RPMPKG ] && > "LOGS/${i}.log"	# clean log files
+	  [ -z $RPMPKG ] && build "Building: ${i}" 'rpmbuild -ba --nocheck SPECS/${i}.spec' "LOGS/${i}.log"
+	  [ -e LOGS/${i}.completed ] && continue;
+	  RPMPKG=$(find RPMS -name "${i}-[0-9]*.rpm" -print)
+	  [ -z $RPMPKG ] && die "installation error: rpm package not found\n"
+	  build "Installing: ${i}" "rpm -ivh --nodeps --force ${RPMPKG}" "LOGS/${i}.completed" 
+	done
+
+msg "System finished !"
+exit 0

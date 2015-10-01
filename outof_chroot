@@ -1,0 +1,25 @@
+#!/bin/bash
+#################################################
+#	Title:	outof_chroot			#
+#        Date:	2015-06-01			#
+#     Version:	1.0				#
+#      Author:	nielsterp@comhem.se		#
+#     Options:					#
+#################################################
+#
+#	Build LFS system
+#
+set -o errexit		# exit if error...insurance ;)
+set -o nounset		# exit if variable not initalized
+set +h			# disable hashall
+source config.inc
+source function.inc
+
+if mountpoint ${LFS}/run	>/dev/null 2>&1; then umount ${LFS}/run; fi
+if mountpoint ${LFS}/sys	>/dev/null 2>&1; then umount ${LFS}/sys; fi
+if mountpoint ${LFS}/proc	>/dev/null 2>&1; then umount ${LFS}/proc; fi
+if mountpoint ${LFS}/dev/pts	>/dev/null 2>&1; then umount ${LFS}/dev/pts; fi
+if mountpoint ${LFS}/dev	>/dev/null 2>&1; then umount ${LFS}/dev; fi
+msg "Type 'exit' to get out"
+	
+exit 0

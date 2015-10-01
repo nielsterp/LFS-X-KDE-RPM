@@ -1,0 +1,37 @@
+#!/bin/bash
+#################################################
+#	Title:	goto_chroot			#
+#        Date:	2015-06-01			#
+#     Version:	1.0				#
+#      Author:	nielsterp@comhem.se		#
+#     Options:	This script will put you 	#
+#		in CHROOT.			#
+#						#
+#################################################
+#
+#
+set -o errexit				# exit if error...insurance ;)
+set -o nounset				# exit if variable not initalized
+set +h					# disable hashall
+source config.inc
+source function.inc
+
+#	Prepare Virtual Kernel File Systems
+	if ! mountpoint ${LFS}/dev	>/dev/null 2>&1; then mount --bind /dev ${LFS}/dev; fi
+[ ${EUID} -eq 0 ] 	|| die "${PRGNAME}: Need to be root user: FAILURE"
+[ -z ${PARENT} ]	&& die "${PRGNAME}: PARENT not set: FAILURE"
+[ -z ${LFS} ]		&& die "${PRGNAME}: LFS not set: FAILURE"
+if ! mountpoint ${LFS}/dev/pts	>/dev/null 2>&1; then mount -t devpts devpts ${LFS}/dev/pts -o gid=5,mode=620; fi
+if ! mountpoint ${LFS}/proc	>/dev/null 2>&1; then mount -t proc proc ${LFS}/proc; fi
+if ! mountpoint ${LFS}/sys 	>/dev/null 2>&1; then mount -t sysfs sysfs ${LFS}/sys; fi
+if ! mountpoint ${LFS}/run	>/dev/null 2>&1; then mount -t tmpfs tmpfs ${LFS}/run; fi
+if [ -h ${LFS}/dev/shm ];			 then mkdir -pv ${LFS}/$(readlink ${LFS}/dev/shm); fi
+#
+#	Goto chroot, everthing is ready. Start building
+#
+chroot "$LFS" /usr/bin/env -i              \
+    HOME=/root TERM="$TERM" PS1='\u:\w\$ ' \
+    PATH=/bin:/usr/bin:/sbin:/usr/sbin     \
+    /bin/bash --login	#
+cd /usr/src/Octothorpe
+exit 0

@@ -1,0 +1,111 @@
+#!/bin/bash
+#################################################
+#	Title:	mk-lfs-x			#
+#        Date:	2015-06-01			#
+#     Version:	1.0				#
+#      Author:	nielsterp@comhem.se		#
+#     Options:	This script is designed to run	#
+#		in CHROOT on your host system.	#
+#		Do NOT attempt to run it from	#
+#		your LFS environment !		#
+#						#
+#		Run as root or use sudo.	#
+#################################################
+#
+#
+set -o errexit				# exit if error...insurance ;)
+set -o nounset				# exit if variable not initalized
+set +h					# disable hashall
+source config.inc
+source function.inc
+PRGNAME=${0##*/}			# script name minus the path
+[ ${EUID} -eq 0 ] 	|| die "${PRGNAME}: Need to be root user: FAILURE"
+[ -z ${PARENT} ]	&& die "${PRGNAME}: PARENT not set: FAILURE"
+[ -z ${LFS} ]		&& die "${PRGNAME}: LFS not set: FAILURE"
+	#
+	#	Build X-Org, X libraries, Multimedia libraries and KDE
+	#
+	[ -d "${LFS}" ] && die "${PRGNAME}: Not in chroot environment: FAILURE"
+	#
+	# Packages for KDE
+	# Deps for Automoc4 are allready installed ...
+	LIST="automoc4 "
+	# Deps for Phonon are allready installed ...
+	LIST+="phonon "
+	# Deps for Phonon-backend-gstreamer are allready installed 
+	LIST+="phonon-backend-gstreamer "
+	# Deps for Phonon-backend-vlc are allready installed ...
+	LIST+="phonon-backend-vlc "
+	# Ready for Akonadi
+	LIST+="akonadi "
+	# Deps for Attica are allready installed
+	LIST+="attica "
+	# Deps for Qimageblitz are allready installed
+	LIST+="qimageblitz "
+	# Deps for Polkit-qt are allready installed
+	LIST+="polkit-qt "
+	# Deps for Oxygen-icons are allready installed ...
+	LIST+="oxygen-icons "
+	# Deps for KDELibs
+	LIST+="libdbusmenu-qt exiv2 strigi qca libatasmart gptfdisk ntfs-3g_ntfsprogs "
+	LIST+="LVM2 parted gparted udisks grantlee jasper libdaemon dbus-python avahi "
+	# Ready for KDELibs
+	LIST+="kdelibs "
+	# Deps for Kfilemetadata
+	LIST+="poppler "
+	# Ready for Kfilemetadata
+	LIST+="kfilemetadata "
+	# Deps for KDEPimlibs
+	LIST+="libassuan gpgme libical cyrus-sasl qjson openldap "
+	# Ready for KDEPimlibs
+	LIST+="kdepimlibs "
+	# Deps for Baloo
+	LIST+="xapian-core "
+	# Ready for Baloo
+	LIST+="baloo baloo-widgets "
+	# Deps for Polkit-kde-agent are allready installed ...
+	LIST+="polkit-kde-agent "
+	# Deps for Kactivities are allready installed ...
+	LIST+="kactivities "
+	# Deps for Kde-runtime are allready installed ...
+	LIST+="kde-runtime "
+	# Deps for Kde-baseapps are allready installed ...
+	LIST+="kde-baseapps "
+	# Deps for Kde-base-artwork are allready installed ...
+	LIST+="kde-base-artwork "
+	# Deps for Kde-workspace are allready installed
+	LIST+="kde-workspace kde-l10n-da "
+	# Basic KDE is now ready, continuing with applications
+	LIST+="konsole kate ark kmix libkcddb kdepim-runtime "
+	# Deps for kdepim have allready been installed ...
+	LIST+="kdepim "
+	# Libexiv2 has no deps ...
+	LIST+="libkexiv2 "
+	# Deps for Kdeplasma-addons are allready installed ...
+	LIST+="kdeplasma-addons okular "
+	# Deps for Libkdcraw
+	LIST+="LibRaw "
+	# Ready for Libkdcraw
+	LIST+="libkdcraw "
+	# Deps for Gwenview are allready installed ...
+	LIST+="gwenview "
+	# For some reason, D-Bus needs to be reinstalled
+	LIST+="dbus2 "
+	# KDE is now complete
+	
+	
+	for i in ${LIST}; do
+	  RPMPKG=""
+	  rm -rf BUILD/* BUILDROOT/* > /dev/null 2>&1
+	  RPMPKG=$(find RPMS -name "${i}-[0-9]*.rpm" -print)
+	  [ -z $RPMPKG ] || printf "%s\n" "       Skipping: ${i}"
+	  [ -z $RPMPKG ] && > "LOGS/${i}.log"	# clean log files
+	  [ -z $RPMPKG ] && build "Building: ${i}" 'rpmbuild -ba --nocheck SPECS/${i}.spec' "LOGS/${i}.log"
+	  [ -e LOGS/${i}.completed ] && continue;
+	  RPMPKG=$(find RPMS -name "${i}-[0-9]*.rpm" -print)
+	  [ -z $RPMPKG ] && die "installation error: rpm package not found\n"
+	  build "Installing: ${i}" "rpm -ivh --nodeps --force ${RPMPKG}" "LOGS/${i}.completed" 
+	done
+
+msg "System finished !"
+exit 0
